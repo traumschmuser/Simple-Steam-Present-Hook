@@ -3,5 +3,5 @@
 
 namespace tool 
 {
-	int main(); //write your main code here
+	int main(int hook_mode); //write your main code here
 }

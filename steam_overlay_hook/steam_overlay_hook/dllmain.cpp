@@ -2,7 +2,7 @@
 
 DWORD WINAPI attach()
 {
-	if (!traumHook::InitializeSteamHook(MODE_TEXT))
+	if (!traumHook::InitializeSteamHook(MODE_DATA))
 	{
 		//HOOK FAILED
 		//MessageBox(0, L"hook failed", L"ERROR", 0);

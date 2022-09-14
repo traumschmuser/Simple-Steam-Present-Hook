@@ -9,31 +9,25 @@ namespace traumHook
 	//offsets
 	uintptr_t gameOverlayRenderer64; //GameOverlayRenderer64.dll base address
 
-	uintptr_t steamCreateHook_offset; //Steam CreateHook() offset	[.text]
-	uintptr_t steamPresentHook_offset; //SteamPresentHook() offset	[.text]
+	uintptr_t steamCreateHook_offset; //Steam CreateHook() offset				[.text]
+	uintptr_t steamPresentHook_offset; //SteamPresentHook() offset				[.text]
 
 	uintptr_t steamPresentPtr_address; //Steam return Present Pointer			[.data]
 	uintptr_t origPresentPtr_content; //Steam original Present return address	[.data]
 
-	//steam Present Hook [.text]
+	//hook mode
+	int mode;
+
+	//steam Present Hook
 	__int64(*Present)(void*, __int64, __int64);
-	__int64 main_hook_text(void* swapchain, __int64 interval, __int64 flags)
+	__int64 main_hook(void* swapchain, __int64 interval, __int64 flags)
 	{
 		//calls your "main" function
-		tool::main();
-		
-		//returns original Present
-		return Present(swapchain, interval, flags);
-	}
-
-	//steam Present Hook [.data]
-	__int64 main_hook_data(void* swapchain, __int64 interval, __int64 flags)
-	{
-		//calls your "main" function
-		tool::main();
+		tool::main(mode);
 
 		//returns original Present
-		return ((__int64 (*)(void*, __int64, __int64))(origPresentPtr_content))(swapchain, interval, flags);
+		if (mode == MODE_TEXT) return Present(swapchain, interval, flags); //.text
+		else if (mode == MODE_DATA) return ((__int64 (*)(void*, __int64, __int64))(origPresentPtr_content))(swapchain, interval, flags); //.data
 	}
 
 	//steam create hook function
@@ -48,6 +42,8 @@ namespace traumHook
 		gameOverlayRenderer64 = (uintptr_t)GetModuleHandle(L"GameOverlayRenderer64.dll");
 		if (!gameOverlayRenderer64) return false;
 
+		mode = hook_mode;
+
 		if (hook_mode == MODE_TEXT) {
 			//pattern scans
 			steamCreateHook_offset = memory::PatternScan("\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x30\x33\xC0", "xxxxxxxxxxxx", gameOverlayRenderer64, 0xFFFFF);
@@ -59,7 +55,7 @@ namespace traumHook
 			else return false;
 			
 			//create hook
-			if (SteamCreateHook(gameOverlayRenderer64 + steamPresentHook_offset, (__int64)main_hook_text, (__int64*)&Present, 1) != 1) return false;
+			if (SteamCreateHook(gameOverlayRenderer64 + steamPresentHook_offset, (__int64)main_hook, (__int64*)&Present, 1) != 1) return false;
 			else return true;
 		}
 		else if(hook_mode == MODE_DATA)
@@ -71,7 +67,7 @@ namespace traumHook
 
 			//create hook
 			origPresentPtr_content = *(uintptr_t*)(steamPresentPtr_address);
-			*(uintptr_t*)(steamPresentPtr_address) = (uintptr_t)&main_hook_data;
+			*(uintptr_t*)(steamPresentPtr_address) = (uintptr_t)&main_hook;
 
 			return true;
 		}
