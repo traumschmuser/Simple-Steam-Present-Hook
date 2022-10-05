@@ -1,8 +1,8 @@
 #pragma once
 #include <Windows.h>
+#include <string>
 
 namespace memory
 {
-	bool MemCompare(const char* bData, const char* bSig, const char* szMask);
-	uintptr_t PatternScan(const char* pattern, const char* mask, uintptr_t begin, unsigned int size);
+	uintptr_t PatternScan(const char* pattern, std::string mask, uintptr_t begin, uintptr_t size);
 }
