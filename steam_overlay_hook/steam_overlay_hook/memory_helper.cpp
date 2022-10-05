@@ -1,25 +1,28 @@
 #include "memory_helper.h"
 
-//compares bytes, needed for pattern scanning
-bool memory::MemCompare(const char* bData, const char* bSig, const char* szMask) {
-	for (; *szMask; ++szMask, ++bData, ++bSig) {
-		if (*szMask == 'x' && *bData != *bSig) {
-			return false;
-		}
-	}
-	return (*szMask == NULL);
-}
-
-//pattern scan
-uintptr_t memory::PatternScan(const char* pattern, const char* mask, uintptr_t begin, unsigned int size)
+uintptr_t memory::PatternScan(const char* pattern, std::string mask, uintptr_t begin, uintptr_t size)
 {
-	unsigned int patternLength = (unsigned int)strlen(pattern);
+	size_t pattern_length = mask.length();
+	bool found = false;
+	uintptr_t pattern_pos = 0, return_address = 0;
 
-	for (unsigned int i = 0; i < size - patternLength; i++)
+	for (uintptr_t i = 0; i < size - pattern_length; ++i) 
 	{
-		if (MemCompare((const char*)(begin + i), (const char*)pattern, mask)) {
-			return begin + i;
+		while (pattern_pos < pattern_length)
+		{
+			if (*(char*)(begin + i + pattern_pos) == pattern[pattern_pos] || mask[pattern_pos] == '?') {
+				if (pattern_pos == pattern_length - 1) {
+					return_address = begin + i;
+					found = true;
+				}
+			}
+			else {
+				pattern_pos = 0;
+				break;
+			}
+			pattern_pos++;
 		}
+		if (found == true) break;
 	}
-	return (uintptr_t)nullptr;
+	return return_address;
 }
